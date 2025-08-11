@@ -11,6 +11,14 @@ type Handshake struct {
 	PeerID   [20]byte
 }
 
+func New(infoHash, peerID [20]byte) *Handshake {
+	return &Handshake{
+		Pstr:     "BitTorrent protocol",
+		InfoHash: infoHash,
+		PeerID:   peerID,
+	}
+}
+
 func (h Handshake) Serialize() []byte {
 	handshake := make([]byte, len(h.Pstr)+49)
 	handshake[0] = byte(len(h.Pstr))
