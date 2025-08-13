@@ -1,16 +1,16 @@
-package torrentfile
+package torrent
 
 import (
 	"bytes"
+	"crypto/rand"
 	"crypto/sha1"
 	"fmt"
-	"io"
+	"os"
 
 	"github.com/jackpal/bencode-go"
 )
 
-const Port uint16 = 6881                                                                                                                               // Default port for BitTorrent
-var PeerID [20]byte = [20]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10, 0x11, 0x12, 0x13, 0x14} // Example PeerID
+const Port uint16 = 6881 // Default port for BitTorrent
 
 type TorrentFile struct {
 	Announce    string
@@ -74,12 +74,30 @@ func (info bencodeInfo) splitPieceHashes() ([][20]byte, error) {
 	return piecedHashes, nil
 }
 
-func Open(r io.Reader) (TorrentFile, error) {
+func OpenTorrent(path string) (TorrentFile, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return TorrentFile{}, err
+	}
+	defer file.Close()
 	bto := bencodeTorrent{}
-	err := bencode.Unmarshal(r, &bto)
+	err = bencode.Unmarshal(file, &bto)
 	if err != nil {
 		return TorrentFile{}, err
 	}
 
 	return bto.toTorrentFile()
+}
+
+func (tf TorrentFile) DownloadTorrent(path string) error {
+	var peerID [20]byte
+	_, err := rand.Read(peerID[:])
+	if err != nil {
+		return err
+	}
+	peers, err := tf.RequestPeersFromTracker(peerID, Port)
+
+	// init p2p connection to peers
+
+	// download file to path
 }
