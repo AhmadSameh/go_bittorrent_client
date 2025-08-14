@@ -1,6 +1,7 @@
 package torrent
 
 import (
+	"bittorrent_client/internal/p2p"
 	"bytes"
 	"crypto/rand"
 	"crypto/sha1"
@@ -18,6 +19,7 @@ type TorrentFile struct {
 	PiecesHash  [][20]byte
 	PieceLength int
 	Length      int
+	Name        string
 }
 
 type bencodeInfo struct {
@@ -38,6 +40,7 @@ func (bto bencodeTorrent) toTorrentFile() (TorrentFile, error) {
 	tf.Announce = bto.Announce
 	tf.PieceLength = bto.Info.PieceLength
 	tf.Length = bto.Info.Length
+	tf.Name = bto.Info.Name
 	tf.InfoHash, err = bto.Info.hash()
 	if err != nil {
 		return TorrentFile{}, err
@@ -96,8 +99,22 @@ func (tf TorrentFile) DownloadTorrent(path string) error {
 		return err
 	}
 	peers, err := tf.RequestPeersFromTracker(peerID, Port)
+	if err != nil {
+		return err
+	}
 
-	// init p2p connection to peers
+	tr := p2p.Torrent{
+		Peers:       peers,
+		PeerID:      peerID,
+		InfoHash:    tf.InfoHash,
+		PieceHashes: tf.PiecesHash,
+		PieceLength: tf.PieceLength,
+		Length:      tf.Length,
+		Name:        tf.Name,
+	}
 
-	// download file to path
+	buf, err := tr.Download()
+	if err != nil {
+		return err
+	}
 }
