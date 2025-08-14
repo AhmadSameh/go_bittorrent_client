@@ -36,7 +36,7 @@ func completeHandshake(conn net.Conn, infoHash [20]byte, peerID [20]byte) error 
 		return err
 	}
 	if !bytes.Equal(res.InfoHash[:], infoHash[:]) {
-		return fmt.Errorf("Expected infohash %x but got %x", res.InfoHash, infoHash)
+		return fmt.Errorf("expected infohash %x but got %x", res.InfoHash, infoHash)
 	}
 	return nil
 }
@@ -45,19 +45,47 @@ func recvBitfield(conn net.Conn) (bitfield.BitField, error) {
 	conn.SetDeadline(time.Now().Add(3 * time.Second))
 	defer conn.SetDeadline(time.Time{})
 
-	msg, err := message.Read()
+	msg, err := message.Read(conn)
 	if err != nil {
 		return nil, err
 	}
 	if msg.ID != message.MsgBitfield {
-		err := fmt.Errorf("Expected bitfield but got ID %d", msg.ID)
+		err := fmt.Errorf("expected bitfield but got ID %d", msg.ID)
 		return nil, err
 	}
 	return msg.Payload, nil
 }
 
-func InitTCP(peer peers.Peer, peerID, infoHash [20]byte) (*Client, error) {
-	// start connection with the peer
+func (client Client) ReadMessage() (*message.Message, error) {
+	msg, err := message.Read(client.Conn)
+	return msg, err
+}
+
+func (client Client) SendUnchoke() error {
+	msg := message.Message{ID: message.MsgUnchoke}
+	_, err := client.Conn.Write(msg.Serialize())
+	return err
+}
+
+func (client Client) SendInterested() error {
+	msg := message.Message{ID: message.MsgInterested}
+	_, err := client.Conn.Write(msg.Serialize())
+	return err
+}
+
+func (client Client) SendHave(index int) error {
+	msg := message.FormatHave(index)
+	_, err := client.Conn.Write(msg.Serialize())
+	return err
+}
+
+func (client Client) SendRequest(index, begin, length int) error {
+	req := message.FormatRequest(index, begin, length)
+	_, err := client.Conn.Write(req.Serialize())
+	return err
+}
+
+func ConnectWithPeer(peer peers.Peer, peerID, infoHash [20]byte) (*Client, error) {
 	conn, err := net.DialTimeout("tcp", peer.String(), 3*time.Second)
 	if err != nil {
 		return nil, err
