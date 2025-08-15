@@ -37,7 +37,10 @@ func FormatHave(index int) *Message {
 	return &Message{ID: MsgHave, Payload: payload}
 }
 
-func (m Message) Serialize() []byte {
+func (m *Message) Serialize() []byte {
+	if m == nil {
+		return make([]byte, 4)
+	}
 	length := uint32(1 + len(m.Payload))
 	buf := make([]byte, 4+length)
 	binary.BigEndian.PutUint32(buf[:4], length)
@@ -46,7 +49,11 @@ func (m Message) Serialize() []byte {
 	return buf
 }
 
-func (m Message) ParsHave(msg *Message) (int, error) {
+func ParseHave(msg *Message) (int, error) {
+	if msg == nil || msg.ID != MsgHave {
+		return 0, fmt.Errorf("not a have message")
+
+	}
 	if len(msg.Payload) != 4 {
 		return 0, fmt.Errorf("expected payload length 4, got length %d", len(msg.Payload))
 	}
@@ -54,8 +61,13 @@ func (m Message) ParsHave(msg *Message) (int, error) {
 	return index, nil
 }
 
-func (m Message) ParsePiece(index int, buf []byte, msg *Message) (int, error) {
-
+func ParsePiece(index int, buf []byte, msg *Message) (int, error) {
+	if msg == nil || msg.ID != MsgPiece {
+		return 0, fmt.Errorf("not a piece message")
+	}
+	if len(msg.Payload) < 8 {
+		return 0, fmt.Errorf("payload too short")
+	}
 	pieceIndex := int(binary.BigEndian.Uint32(msg.Payload[0:4]))
 	if pieceIndex != index {
 		return 0, fmt.Errorf("expected index %d, got %d", index, pieceIndex)
@@ -79,6 +91,9 @@ func Read(r io.Reader) (*Message, error) {
 		return nil, err
 	}
 	length := binary.BigEndian.Uint32(lengthBuf)
+	if length == 0 {
+		return nil, err
+	}
 	messageBuf := make([]byte, length)
 	_, err = io.ReadFull(r, messageBuf)
 	if err != nil {
@@ -91,4 +106,39 @@ func Read(r io.Reader) (*Message, error) {
 		ID:      id,
 		Payload: payload,
 	}, nil
+}
+
+func (m *Message) name() string {
+	if m == nil {
+		return "KeepAlive"
+	}
+	switch m.ID {
+	case MsgChoke:
+		return "Choke"
+	case MsgUnchoke:
+		return "Unchoke"
+	case MsgInterested:
+		return "Interested"
+	case MsgNotInterested:
+		return "NotInterested"
+	case MsgHave:
+		return "Have"
+	case MsgBitfield:
+		return "Bitfield"
+	case MsgRequest:
+		return "Request"
+	case MsgPiece:
+		return "Piece"
+	case MsgCancel:
+		return "Cancel"
+	default:
+		return fmt.Sprintf("Unknown#%d", m.ID)
+	}
+}
+
+func (m *Message) String() string {
+	if m == nil {
+		return m.name()
+	}
+	return fmt.Sprintf("%s [%d]", m.name(), len(m.Payload))
 }
