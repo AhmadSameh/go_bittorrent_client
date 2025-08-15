@@ -4,6 +4,9 @@ import (
 	"bittorrent_client/internal/client"
 	"bittorrent_client/internal/message"
 	"bittorrent_client/internal/peers"
+	"bytes"
+	"crypto/sha1"
+	"fmt"
 	"log"
 	"time"
 )
@@ -54,13 +57,13 @@ func (state pieceProgress) readMessage() error {
 	case message.MsgChoke:
 		state.client.Choked = true
 	case message.MsgHave:
-		index, err := msg.ParsHave(msg)
+		index, err := message.ParseHave(msg)
 		if err != nil {
 			return err
 		}
 		state.client.Bitfield.SetPiece(index)
 	case message.MsgPiece:
-		downloaded, err := msg.ParsePiece(state.index, state.buf, msg)
+		downloaded, err := message.ParsePiece(state.index, state.buf, msg)
 		if err != nil {
 			return err
 		}
@@ -109,6 +112,14 @@ func attemptDownloadPiece(client *client.Client, workPiece *workContainer) ([]by
 	}
 
 	return state.buf, nil
+}
+
+func checkIntegrity(workpiece *workContainer, buf []byte) error {
+	hashedBuf := sha1.Sum(buf)
+	if !bytes.Equal(hashedBuf[:], workpiece.hash[:]) {
+		return fmt.Errorf("index %d failed integrity check", workpiece.index)
+	}
+	return nil
 }
 
 func (t Torrent) downloadPiece(peer peers.Peer, workBuf chan *workContainer, results chan *resultsContainer) {
