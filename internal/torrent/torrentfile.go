@@ -119,10 +119,11 @@ func (tf TorrentFile) DownloadTorrent(path string) error {
 	}
 
 	f, err := os.Create(tf.Name)
-	defer f.Close()
 	if err != nil {
 		return err
 	}
+
+	defer f.Close()
 
 	_, err = f.Write(buf)
 	if err != nil {
