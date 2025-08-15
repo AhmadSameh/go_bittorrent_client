@@ -45,11 +45,11 @@ func (tf TorrentFile) RequestPeersFromTracker(peerID [20]byte, port uint16) ([]p
 	}
 	defer res.Body.Close()
 	trackerRes := bencodeTrackerResp{}
-	err = bencode.Unmarshal(res.Body, trackerRes)
+	err = bencode.Unmarshal(res.Body, &trackerRes)
 	if err != nil {
 		return nil, err
 	}
 	peers, err := peers.GetPeers([]byte(trackerRes.Peers))
 
-	return peers, nil
+	return peers, err
 }
