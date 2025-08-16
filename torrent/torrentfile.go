@@ -1,7 +1,7 @@
 package torrent
 
 import (
-	"bittorrent_client/internal/p2p"
+	"bittorrent_client/p2p"
 	"bytes"
 	"crypto/rand"
 	"crypto/sha1"

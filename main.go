@@ -1,7 +1,7 @@
 package main
 
 import (
-	"bittorrent_client/internal/torrent"
+	"bittorrent_client/torrent"
 	"log"
 	"os"
 )

@@ -1,7 +1,7 @@
 package torrent
 
 import (
-	"bittorrent_client/internal/peers"
+	"bittorrent_client/peers"
 	"net"
 	"net/http"
 	"net/http/httptest"

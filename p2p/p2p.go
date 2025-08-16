@@ -1,9 +1,9 @@
 package p2p
 
 import (
-	"bittorrent_client/internal/client"
-	"bittorrent_client/internal/message"
-	"bittorrent_client/internal/peers"
+	"bittorrent_client/client"
+	"bittorrent_client/message"
+	"bittorrent_client/peers"
 	"bytes"
 	"crypto/sha1"
 	"fmt"
