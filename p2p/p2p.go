@@ -8,6 +8,7 @@ import (
 	"crypto/sha1"
 	"fmt"
 	"log"
+	"runtime"
 	"time"
 )
 
@@ -45,10 +46,14 @@ type pieceProgress struct {
 	backlog    int
 }
 
-func (state pieceProgress) readMessage() error {
+func (state *pieceProgress) readMessage() error {
 	msg, err := state.client.ReadMessage()
 	if err != nil {
 		return err
+	}
+
+	if msg == nil {
+		return nil
 	}
 
 	switch msg.ID {
@@ -182,6 +187,10 @@ func (t Torrent) Download() ([]byte, error) {
 		end := begin + t.PieceLength
 		copy(buf[begin:end], res.buf)
 		downloadedPiece++
+
+		percent := float64(downloadedPiece) / float64(len(t.PieceHashes)) * 100
+		numWorkers := runtime.NumGoroutine() - 1 // subtract 1 for main thread
+		log.Printf("(%0.2f%%) Downloaded piece #%d from %d peers\n", percent, res.index, numWorkers)
 	}
 	close(workBuf)
 
