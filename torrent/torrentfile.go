@@ -118,7 +118,7 @@ func (tf TorrentFile) DownloadTorrent(path string) error {
 		return err
 	}
 
-	f, err := os.Create(tf.Name)
+	f, err := os.Create(path)
 	if err != nil {
 		return err
 	}
